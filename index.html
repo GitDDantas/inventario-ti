@@ -556,5 +556,36 @@
             }
         }
     </script>
+    <!-- BOTÃO TEMPORÁRIO DE RESGATE -->
+<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin: 20px;">
+    <h3 style="color: #856404; margin-top: 0;">⚠️ RECUPERAÇÃO DE DADOS</h3>
+    <p style="font-size: 14px;">Clique no botão abaixo para baixar o backup dos seus dados salvos no celular.</p>
+    <button onclick="resgatarDados()" style="background: #dc3545; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        BAIXAR BACKUP JSON
+    </button>
+</div>
+
+<script>
+function resgatarDados() {
+    // Pega os dados salvos no celular (tanto da versão antiga quanto da nova)
+    let dados = localStorage.getItem('inventory_data_v2') || localStorage.getItem('inventory_data');
+    
+    if (!dados) {
+        alert("Nenhum dado encontrado na memória do navegador.");
+        return;
+    }
+    
+    // Cria o arquivo para download
+    const blob = new Blob([dados], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup_inventario.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    alert("Backup baixado! Envie este arquivo para o suporte (ou cole o conteúdo aqui).");
+}
+</script>
 </body>
 </html>
