@@ -111,7 +111,7 @@
             margin-top: 5px;
         }
         .status-pendente { background-color: var(--ifs-green); }
-        .status-baixado { background-color: #555; } /* Cor neutra para itens já baixados */
+        .status-baixado { background-color: #555; }
 
         /* Toast de Mensagens */
         #toast {
@@ -167,9 +167,15 @@
                 <p>Itens Baixados: <strong id="baixa-count">0</strong></p>
             </div>
 
-            <h3>Exportar Dados (Backup)</h3>
+            <h3>Exportar Dados (CSV)</h3>
             <p style="font-size: 14px; color: #666;">Baixe o CSV com todos os itens (baixas e inclusões) para reimportar futuramente.</p>
             <button class="btn-primary" onclick="downloadCSV()">Baixar CSV Completo</button>
+
+            <h3>Backup de Segurança (JSON)</h3>
+            <p style="font-size: 14px; color: #666;">Salve uma cópia exata do estado atual do app. Útil para restaurar exatamente como estava.</p>
+            <button class="btn-secondary" onclick="downloadJSON()">Baixar Backup JSON</button>
+            <label style="font-size: 14px; color:#555; display:block; margin-top:10px;">Restaurar Backup JSON</label>
+            <input type="file" id="json-file-input" accept=".json" onchange="handleJSONUpload(event)">
 
             <h3>Carregar Lista Base (CSV)</h3>
             <p style="font-size: 14px; color: #666;">Selecione a planilha CSV com as colunas: Tombamento, Denominacao, Marca.</p>
@@ -212,7 +218,7 @@
             if (stored) {
                 inventory = JSON.parse(stored);
             } else {
-                inventory = []; // Começa vazio, o usuário deve carregar o CSV
+                inventory = [];
             }
             updateStats();
         }
@@ -288,7 +294,7 @@
                     inventory[index].status = 'BAIXADO';
                     saveData();
                     showToast('Baixa realizada com sucesso!');
-                    searchEquipment(); // Atualiza a busca
+                    searchEquipment();
                 }
             }
         }
@@ -319,7 +325,6 @@
             saveData();
             showToast('Equipamento cadastrado com sucesso!');
             
-            // Limpa os campos
             document.getElementById('new-tombamento').value = '';
             document.getElementById('new-descricao').value = '';
             document.getElementById('new-marca').value = '';
@@ -353,7 +358,6 @@
         }
 
         function parseCSV(text) {
-            // Parser robusto para lidar com aspas e vírgulas
             const lines = [];
             let currentLine = [];
             let currentField = '';
@@ -367,7 +371,7 @@
                     if (char === '"') {
                         if (nextChar === '"') {
                             currentField += '"';
-                            i++; // Pula a próxima aspa
+                            i++;
                         } else {
                             inQuotes = false;
                         }
@@ -393,7 +397,6 @@
                     }
                 }
             }
-            // Última linha
             if (currentField || currentLine.length > 0) {
                 currentLine.push(currentField);
                 if (currentLine.some(f => f.trim() !== '')) {
@@ -406,19 +409,17 @@
                 return;
             }
 
-            // Detecta cabeçalho
             const header = lines[0].map(h => h.trim().toUpperCase());
             let idxTombamento = header.indexOf('TOMBAMENTO');
             let idxDenominacao = header.indexOf('DENOMINACAO');
             let idxMarca = header.indexOf('MARCA');
             let idxStatus = header.indexOf('STATUS');
 
-            // Se não encontrar cabeçalho, assume ordem padrão
             if (idxTombamento === -1) {
                 idxTombamento = 0;
                 idxDenominacao = 1;
                 idxMarca = 2;
-                idxStatus = -1; // Sem status pré-definido
+                idxStatus = -1;
             }
 
             const newInventory = [];
@@ -458,7 +459,6 @@
 
             let csvContent = "Tombamento,Denominacao,Marca,Status\n";
             inventory.forEach(row => {
-                // Escapa aspas duplas duplicando-as
                 const t = row.tombamento.replace(/"/g, '""');
                 const d = row.denominacao.replace(/"/g, '""');
                 const m = row.marca.replace(/"/g, '""');
@@ -476,13 +476,55 @@
             document.body.removeChild(link);
         }
 
+        // --- BACKUP E RESTAURAÇÃO JSON ---
+        function downloadJSON() {
+            if (inventory.length === 0) {
+                showToast('Não há dados para exportar.');
+                return;
+            }
+            const jsonString = JSON.stringify(inventory, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup_inventario_ifs.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Backup JSON baixado!');
+        }
+
+        function handleJSONUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    if (Array.isArray(parsedData)) {
+                        if (confirm(`Restaurar ${parsedData.length} itens do backup? Isso substituirá a lista atual.`)) {
+                            inventory = parsedData;
+                            saveData();
+                            showToast('Backup restaurado com sucesso!');
+                        }
+                    } else {
+                        showToast('Formato JSON inválido.');
+                    }
+                } catch (err) {
+                    showToast('Erro ao ler o arquivo JSON.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function resetData() {
             if(confirm('Isso apagará todos os dados salvos. Tem certeza?')) {
                 localStorage.removeItem('inventory_data_ifs');
                 inventory = [];
                 saveData();
                 showToast('Dados resetados.');
-                // Limpa a tela de busca
                 document.getElementById('search-input').value = '';
                 document.getElementById('search-result').innerHTML = '';
             }
