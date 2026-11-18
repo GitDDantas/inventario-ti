@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inventário Mobile - IF</title>
+    <!-- Biblioteca para Leitura de QR Code -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+        }
+
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body { margin: 0; padding: 0; background-color: var(--light); padding-bottom: 70px; }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+
+        /* Navegação Inferior */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--secondary);
+            font-size: 12px;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .nav-btn.active { color: var(--primary); font-weight: bold; }
+        .nav-btn svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
+
+        /* Telas */
+        .screen { display: none; }
+        .screen.active { display: block; animation: fadeIn 0.3s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Formulários e Inputs */
+        input[type="text"], input[type="file"], button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button.btn-primary { background-color: var(--primary); color: white; border: none; font-weight: bold; }
+        button.btn-success { background-color: var(--success); color: white; border: none; font-weight: bold; }
+        button.btn-danger { background-color: var(--danger); color: white; border: none; font-weight: bold; }
+        button.btn-secondary { background-color: var(--secondary); color: white; border: none; }
+
+        /* Resultados e Cards */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+        }
+        .card h3 { margin: 0 0 5px 0; font-size: 16px; color: var(--dark); }
+        .card p { margin: 2px 0; font-size: 14px; color: #555; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: white;
+            margin-top: 5px;
+        }
+        .status-pendente { background-color: var(--primary); }
+        .status-baixado { background-color: var(--success); }
+        .status-nao-encontrado { background-color: var(--danger); }
+
+        /* Scanner Area */
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 15px; background: #000; }
+        
+        /* Abas */
+        .tabs { display: flex; margin-bottom: 15px; background: white; border-radius: 8px; padding: 5px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; border-radius: 5px; cursor: pointer; color: var(--secondary); }
+        .tab-btn.active { background: var(--primary); color: white; font-weight: bold; }
+
+        /* Mensagens de Alerta */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 2000;
+            left: 50%;
+            bottom: 80px;
+            transform: translateX(-50%);
+            font-size: 17px;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        #toast.show { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h2>Inventário TI</h2>
+        <small>Gestão de Equipamentos</small>
+    </header>
+
+    <div class="container">
+        
+        <!-- TELA 1: SCANNER -->
+        <div id="screen-scanner" class="screen active">
+            <div id="reader"></div>
+            <button class="btn-secondary" onclick="startScanner()">Iniciar Câmera / Ler QR</button>
+            <p style="text-align: center; color: #666; font-size: 14px;">Aponte a câmera para o QR Code do equipamento.</p>
+            <div id="scan-result"></div>
+        </div>
+
+        <!-- TELA 2: BUSCA MANUAL -->
+        <div id="screen-manual" class="screen">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('manual')">Manual</button>
+                <button class="tab-btn" onclick="switchTab('novo')">Cadastrar Novo</button>
+            </div>
+
+            <!-- Busca -->
+            <div id="tab-manual">
+                <input type="text" id="search-input" placeholder="Digite Tombamento, Serial ou Descrição..." oninput="searchEquipment()">
+                <div id="manual-result"></div>
+            </div>
+
+            <!-- Cadastro Novo -->
+            <div id="tab-novo" style="display: none;">
+                <h3>Equipamento não cadastrado?</h3>
+                <p>Preencha os dados para adicionar à lista local.</p>
+                <input type="text" id="new-tombamento" placeholder="Tombamento / Serial (Obrigatório)">
+                <input type="text" id="new-descricao" placeholder="Descrição do Equipamento">
+                <input type="text" id="new-marca" placeholder="Marca">
+                <button class="btn-success" onclick="registerNewEquipment()">Adicionar à Lista</button>
+            </div>
+        </div>
+
+        <!-- TELA 3: DADOS E EXPORTAÇÃO -->
+        <div id="screen-data" class="screen">
+            <h3>Resumo</h3>
+            <div class="card">
+                <p>Total de Itens na Lista: <strong id="total-count">0</strong></p>
+                <p>Itens com Baixa: <strong id="baixa-count">0</strong></p>
+            </div>
+
+            <h3>Exportar Dados</h3>
+            <p>Baixe o arquivo CSV atualizado para importar no seu sistema.</p>
+            <button class="btn-primary" onclick="downloadCSV()">Baixar CSV Atualizado</button>
+            
+            <h3>Configurações</h3>
+            <label>Carregar CSV Base (Opcional)</label>
+            <input type="file" id="csv-file-input" accept=".csv" onchange="handleFileUpload(event)">
+            
+            <br><br>
+            <button class="btn-danger" onclick="resetData()">Limpar Dados Locais (Resetar)</button>
+        </div>
+
+    </div>
+
+    <!-- Navegação Inferior -->
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="showScreen('scanner', this)">
+            <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 4h-4v2h6v-6h-2v4z"/></svg>
+            Scanner
+        </button>
+        <button class="nav-btn" onclick="showScreen('manual', this)">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            Buscar/Novo
+        </button>
+        <button class="nav-btn" onclick="showScreen('data', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+            Dados
+        </button>
+    </div>
+
+    <div id="toast">Mensagem</div>
+
+    <script>
+        // --- DADOS INICIAIS (Baseado no CSV fornecido) ---
+        // Como o CSV é muito grande e tem formatos complexos, incluí uma amostra representativa aqui.
+        // O sistema tentará carregar o CSV completo via upload se o usuário desejar.
+        const initialData = [
+            { tombamento: "10174943", denominacao: "MICROCOMPUTADOR ITAUTEC", marca: "ITAUTEC", status: "PENDENTE" },
+            { tombamento: "10155072", denominacao: "COMPUTADOR DELL (MOUSE+TECLADO+MONITOR DELL)", marca: "DELL", status: "PENDENTE" },
+            { tombamento: "50012682", denominacao: "COMPUTADOR E MONITOR HP", marca: "SEM MARCA", status: "PENDENTE" },
+            { tombamento: "10170117", denominacao: "IMPRESSORA A LASER MONOCROMÁTICA LEXMARK T654DN", marca: "HP", status: "PENDENTE" },
+            { tombamento: "10109051", denominacao: "MONITOR DELL 21.5 P2217H", marca: "DELL", status: "PENDENTE" },
+            { tombamento: "10124988", denominacao: "NOBREAK 1200 VA / 600W", marca: "SEM MARCA", status: "PENDENTE" },
+            { tombamento: "10108601", denominacao: "ESTABILIZADOR DE 1000VA", marca: "SEM MARCA", status: "PENDENTE" },
+            { tombamento: "10170040", denominacao: "AR CONDICIONADO SPLIT INVERTER", marca: "ELGIN", status: "PENDENTE" },
+            { tombamento: "10150971", denominacao: "APARELHO TELEFÔNICO IP GRANDSTREAM DP715", marca: "GRANDSTREAM", status: "PENDENTE" },
+            { tombamento: "10147805", denominacao: "TABLET MULTILASER M10", marca: "MULTILASER", status: "PENDENTE" }
+        ];
+
+        let inventory = [];
+        let html5QrcodeScanner = null;
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateStats();
+        });
+
+        function loadData() {
+            const stored = localStorage.getItem('inventory_data');
+            if (stored) {
+                inventory = JSON.parse(stored);
+            } else {
+                inventory = [...initialData];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('inventory_data', JSON.stringify(inventory));
+            updateStats();
+        }
+
+        // --- NAVEGAÇÃO ---
+        function showScreen(screenId, btn) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            if (screenId === 'scanner') {
+                // Não inicia automaticamente para economizar bateria, mas limpa resultados anteriores
+                document.getElementById('scan-result').innerHTML = '';
+            } else {
+                stopScanner();
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (tab === 'manual') {
+                document.getElementById('tab-manual').style.display = 'block';
+                document.getElementById('tab-novo').style.display = 'none';
+            } else {
+                document.getElementById('tab-manual').style.display = 'none';
+                document.getElementById('tab-novo').style.display = 'block';
+            }
+        }
+
+        // --- LÓGICA DE BUSCA E BAIXA ---
+        function searchEquipment() {
+            const term = document.getElementById('search-input').value.toUpperCase();
+            const resultDiv = document.getElementById('manual-result');
+            
+            if (term.length < 2) {
+                resultDiv.innerHTML = '';
+                return;
+            }
+
+            const results = inventory.filter(item => 
+                item.tombamento.includes(term) || 
+                item.denominacao.toUpperCase().includes(term) ||
+                item.marca.toUpperCase().includes(term)
+            );
+
+            renderResults(results, resultDiv);
+        }
+
+        function renderResults(results, container) {
+            container.innerHTML = '';
+            if (results.length === 0) {
+                container.innerHTML = `
+                    <div class="card" style="border-left-color: var(--danger);">
+                        <h3>Não encontrado</h3>
+                        <p>Deseja cadastrar este item?</p>
+                        <button class="btn-success" onclick="switchTab('novo')">Cadastrar Novo</button>
+                    </div>`;
+                return;
+            }
+
+            results.slice(0, 5).forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${item.denominacao}</h3>
+                    <p><strong>Tombamento:</strong> ${item.tombamento}</p>
+                    <p><strong>Marca:</strong> ${item.marca}</p>
+                    <div class="status-badge ${item.status === 'BAIXADO' ? 'status-baixado' : 'status-pendente'}">
+                        ${item.status}
+                    </div>
+                    ${item.status !== 'BAIXADO' ? 
+                        `<button class="btn-primary" style="margin-top:10px" onclick="giveBaixa('${item.tombamento}')">Dar Baixa</button>` : 
+                        `<p style="color:var(--success); font-size:12px; margin-top:5px;">Item já baixado</p>`
+                    }
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function giveBaixa(tombamento) {
+            const index = inventory.findIndex(i => i.tombamento === tombamento);
+            if (index !== -1) {
+                if(confirm(`Confirmar baixa do item ${tombamento}?`)) {
+                    inventory[index].status = 'BAIXADO';
+                    saveData();
+                    showToast('Baixa realizada com sucesso!');
+                    
+                    // Atualiza a tela atual
+                    if(document.getElementById('search-input').value) searchEquipment();
+                    document.getElementById('scan-result').innerHTML = ''; // Limpa scanner
+                }
+            }
+        }
+
+        function registerNewEquipment() {
+            const tomb = document.getElementById('new-tombamento').value.trim();
+            const desc = document.getElementById('new-descricao').value.trim();
+            const marca = document.getElementById('new-marca').value.trim();
+
+            if (!tomb) {
+                showToast('O Tombamento é obrigatório!');
+                return;
+            }
+
+            if (inventory.some(i => i.tombamento === tomb)) {
+                showToast('Este tombamento já existe na lista!');
+                return;
+            }
+
+            inventory.push({
+                tombamento: tomb,
+                denominacao: desc || "CADASTRADO EM CAMPO",
+                marca: marca || "NÃO INFORMADA",
+                status: "PENDENTE"
+            });
+
+            saveData();
+            showToast('Equipamento cadastrado!');
+            document.getElementById('new-tombamento').value = '';
+            document.getElementById('new-descricao').value = '';
+            document.getElementById('new-marca').value = '';
+            switchTab('manual'); // Volta para busca
+        }
+
+        // --- SCANNER ---
+        function startScanner() {
+            if (html5QrcodeScanner) return;
+
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                config,
+                (decodedText) => {
+                    // Sucesso na leitura
+                    stopScanner();
+                    handleScanResult(decodedText);
+                },
+                (errorMessage) => {
+                    // Ignorar erros de leitura contínua
+                }
+            ).catch(err => {
+                showToast('Erro ao acessar câmera: ' + err);
+            });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    html5QrcodeScanner = null;
+                }).catch(err => console.log("Erro ao parar scanner", err));
+            }
+        }
+
+        function handleScanResult(text) {
+            // O QR Code pode conter o número ou uma URL. Vamos tentar extrair o número.
+            // Se o texto for apenas o número, usamos ele.
+            // Se for uma URL, tentamos pegar a última parte.
+            let tombamento = text.trim();
+            
+            // Lógica simples: se tiver barras, pega a última parte
+            if (tombamento.includes('/')) {
+                const parts = tombamento.split('/');
+                tombamento = parts[parts.length - 1];
+            }
+
+            const resultDiv = document.getElementById('scan-result');
+            const item = inventory.find(i => i.tombamento === tombamento);
+
+            if (item) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>${item.denominacao}</h3>
+                    <p><strong>Tombamento:</strong> ${item.tombamento}</p>
+                    <p><strong>Status:</strong> ${item.status}</p>
+                    <button class="btn-success" onclick="giveBaixa('${item.tombamento}')">Confirmar Baixa</button>
+                `;
+                resultDiv.innerHTML = '';
+                resultDiv.appendChild(card);
+                showToast('Equipamento Encontrado!');
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="card" style="border-left-color: var(--danger);">
+                        <h3>Não Encontrado</h3>
+                        <p>Código lido: <strong>${tombamento}</strong></p>
+                        <p>Este item não está na lista.</p>
+                        <button class="btn-primary" onclick="prefillNew('${tombamento}')">Cadastrar Este Código</button>
+                    </div>
+                `;
+                showToast('Equipamento não encontrado na base.');
+            }
+        }
+
+        function prefillNew(code) {
+            showScreen('manual', document.querySelectorAll('.nav-btn')[1]);
+            switchTab('novo');
+            document.getElementById('new-tombamento').value = code;
+        }
+
+        // --- UTILITÁRIOS ---
+        function updateStats() {
+            document.getElementById('total-count').textContent = inventory.length;
+            const baixados = inventory.filter(i => i.status === 'BAIXADO').length;
+            document.getElementById('baixa-count').textContent = baixados;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+
+        function downloadCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Tombamento,Denominacao,Marca,Status\n";
+
+            inventory.forEach(row => {
+                const line = `"${row.tombamento}","${row.denominacao}","${row.marca}","${row.status}"`;
+                csvContent += line + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "inventario_atualizado.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            // Parser simples de CSV para o formato específico
+            const lines = text.split('\n');
+            const newInventory = [];
+            
+            // Pula o cabeçalho
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // Tenta separar por vírgula, mas lida com aspas simples
+                // Como o CSV é complexo, vamos assumir o padrão: Item,Tombamento,Denominacao,Marca...
+                // Nota: Este parser é básico e pode falhar se houver muitas vírgulas dentro das aspas.
+                // Para produção, uma lib como PapaParse seria ideal, mas para manter "self-contained" usamos isso.
+                
+                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                
+                if (parts && parts.length >= 3) {
+                    // Limpeza básica
+                    const tombamento = parts[1] ? parts[1].replace(/"/g, '').trim() : '';
+                    const denominacao = parts[2] ? parts[2].replace(/"/g, '').trim() : '';
+                    const marca = parts[3] ? parts[3].replace(/"/g, '').trim() : '';
+                    
+                    if (tombamento) {
+                        newInventory.push({
+                            tombamento: tombamento,
+                            denominacao: denominacao,
+                            marca: marca,
+                            status: "PENDENTE"
+                        });
+                    }
+                }
+            }
+
+            if (newInventory.length > 0) {
+                if(confirm(`Carregados ${newInventory.length} itens. Isso substituirá a lista atual. Continuar?`)) {
+                    inventory = newInventory;
+                    saveData();
+                    showToast('Lista atualizada com sucesso!');
+                    updateStats();
+                }
+            } else {
+                showToast('Não foi possível ler o CSV. Verifique o formato.');
+            }
+        }
+
+        function resetData() {
+            if(confirm('Isso apagará todas as alterações e voltará para a lista inicial. Tem certeza?')) {
+                localStorage.removeItem('inventory_data');
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>
