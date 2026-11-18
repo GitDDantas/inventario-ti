@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Inventário Mobile - IF</title>
-    <!-- Biblioteca para Leitura de QR Code -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <title>Inventário de TI - IFS</title>
     <style>
         :root {
-            --primary: #0056b3;
-            --secondary: #6c757d;
-            --success: #28a745;
-            --danger: #dc3545;
-            --light: #f8f9fa;
-            --dark: #343a40;
+            --ifs-green: #2f9e41;
+            --ifs-red: #cd191e;
+            --ifs-black: #000000;
+            --ifs-white: #ffffff;
+            --light-gray: #f4f6f8;
+            --dark-gray: #333333;
         }
-
         * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-        body { margin: 0; padding: 0; background-color: var(--light); padding-bottom: 70px; }
-
+        body { margin: 0; padding: 0; background-color: var(--light-gray); padding-bottom: 70px; color: var(--dark-gray); }
+        
         header {
-            background-color: var(--primary);
-            color: white;
+            background-color: var(--ifs-green);
+            color: var(--ifs-white);
             padding: 15px;
             text-align: center;
             position: sticky;
@@ -30,105 +26,108 @@
             z-index: 1000;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        header h1 { margin: 0; font-size: 20px; }
+        header small { font-size: 12px; opacity: 0.9; }
 
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
-
+        
         /* Navegação Inferior */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
-            background: white;
+            background: var(--ifs-white);
             display: flex;
             justify-content: space-around;
             padding: 10px 0;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 1000;
         }
-
         .nav-btn {
             background: none;
             border: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: var(--secondary);
+            color: #777;
             font-size: 12px;
             cursor: pointer;
             flex: 1;
         }
-
-        .nav-btn.active { color: var(--primary); font-weight: bold; }
+        .nav-btn.active { color: var(--ifs-green); font-weight: bold; }
         .nav-btn svg { width: 24px; height: 24px; margin-bottom: 4px; fill: currentColor; }
 
         /* Telas */
         .screen { display: none; }
         .screen.active { display: block; animation: fadeIn 0.3s; }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Formulários e Inputs */
+        /* Formulários e Botões */
         input[type="text"], input[type="file"], button {
             width: 100%;
             padding: 12px;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 16px;
         }
+        button.btn-primary {
+            background-color: var(--ifs-green);
+            color: var(--ifs-white);
+            border: none;
+            font-weight: bold;
+        }
+        button.btn-danger {
+            background-color: var(--ifs-red);
+            color: var(--ifs-white);
+            border: none;
+            font-weight: bold;
+        }
+        button.btn-secondary {
+            background-color: #6c757d;
+            color: var(--ifs-white);
+            border: none;
+            font-weight: bold;
+        }
 
-        button.btn-primary { background-color: var(--primary); color: white; border: none; font-weight: bold; }
-        button.btn-success { background-color: var(--success); color: white; border: none; font-weight: bold; }
-        button.btn-danger { background-color: var(--danger); color: white; border: none; font-weight: bold; }
-        button.btn-secondary { background-color: var(--secondary); color: white; border: none; }
-
-        /* Resultados e Cards */
+        /* Cards de Resultado */
         .card {
-            background: white;
+            background: var(--ifs-white);
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            border-left: 5px solid var(--primary);
+            border-left: 5px solid var(--ifs-green);
         }
-        .card h3 { margin: 0 0 5px 0; font-size: 16px; color: var(--dark); }
+        .card h3 { margin: 0 0 5px 0; font-size: 16px; color: var(--ifs-black); }
         .card p { margin: 2px 0; font-size: 14px; color: #555; }
         .status-badge {
             display: inline-block;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
-            color: white;
+            color: var(--ifs-white);
             margin-top: 5px;
         }
-        .status-pendente { background-color: var(--primary); }
-        .status-baixado { background-color: var(--success); }
-        .status-nao-encontrado { background-color: var(--danger); }
+        .status-pendente { background-color: var(--ifs-green); }
+        .status-baixado { background-color: #555; } /* Cor neutra para itens já baixados */
 
-        /* Scanner Area */
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 15px; background: #000; }
-        
-        /* Abas */
-        .tabs { display: flex; margin-bottom: 15px; background: white; border-radius: 8px; padding: 5px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; border-radius: 5px; cursor: pointer; color: var(--secondary); }
-        .tab-btn.active { background: var(--primary); color: white; font-weight: bold; }
-
-        /* Mensagens de Alerta */
+        /* Toast de Mensagens */
         #toast {
             visibility: hidden;
             min-width: 250px;
             background-color: #333;
             color: #fff;
             text-align: center;
-            border-radius: 2px;
+            border-radius: 8px;
             padding: 16px;
             position: fixed;
             z-index: 2000;
             left: 50%;
             bottom: 80px;
             transform: translateX(-50%);
-            font-size: 17px;
+            font-size: 16px;
             opacity: 0;
             transition: opacity 0.3s, visibility 0.3s;
         }
@@ -138,75 +137,58 @@
 <body>
 
     <header>
-        <h2>Inventário TI</h2>
-        <small>Gestão de Equipamentos</small>
+        <h1>Inventário de TI</h1>
+        <small>Instituto Federal de Sergipe</small>
     </header>
 
     <div class="container">
-        
-        <!-- TELA 1: SCANNER -->
-        <div id="screen-scanner" class="screen active">
-            <div id="reader"></div>
-            <button class="btn-secondary" onclick="startScanner()">Iniciar Câmera / Ler QR</button>
-            <p style="text-align: center; color: #666; font-size: 14px;">Aponte a câmera para o QR Code do equipamento.</p>
-            <div id="scan-result"></div>
+        <!-- TELA 1: BUSCA -->
+        <div id="screen-search" class="screen active">
+            <h3>Buscar Equipamento</h3>
+            <input type="text" id="search-input" placeholder="Digite Tombamento, Descrição ou Marca..." oninput="searchEquipment()">
+            <div id="search-result"></div>
         </div>
 
-        <!-- TELA 2: BUSCA MANUAL -->
-        <div id="screen-manual" class="screen">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('manual')">Manual</button>
-                <button class="tab-btn" onclick="switchTab('novo')">Cadastrar Novo</button>
-            </div>
-
-            <!-- Busca -->
-            <div id="tab-manual">
-                <input type="text" id="search-input" placeholder="Digite Tombamento, Serial ou Descrição..." oninput="searchEquipment()">
-                <div id="manual-result"></div>
-            </div>
-
-            <!-- Cadastro Novo -->
-            <div id="tab-novo" style="display: none;">
-                <h3>Equipamento não cadastrado?</h3>
-                <p>Preencha os dados para adicionar à lista local.</p>
-                <input type="text" id="new-tombamento" placeholder="Tombamento / Serial (Obrigatório)">
-                <input type="text" id="new-descricao" placeholder="Descrição do Equipamento">
-                <input type="text" id="new-marca" placeholder="Marca">
-                <button class="btn-success" onclick="registerNewEquipment()">Adicionar à Lista</button>
-            </div>
+        <!-- TELA 2: CADASTRO -->
+        <div id="screen-register" class="screen">
+            <h3>Cadastrar Novo Equipamento</h3>
+            <p style="font-size: 14px; color: #666;">Adicione itens que não estão na lista base.</p>
+            <input type="text" id="new-tombamento" placeholder="Tombamento (Obrigatório)">
+            <input type="text" id="new-descricao" placeholder="Descrição do Equipamento">
+            <input type="text" id="new-marca" placeholder="Marca">
+            <button class="btn-primary" onclick="registerNewEquipment()">Adicionar à Lista</button>
         </div>
 
         <!-- TELA 3: DADOS E EXPORTAÇÃO -->
         <div id="screen-data" class="screen">
             <h3>Resumo</h3>
             <div class="card">
-                <p>Total de Itens na Lista: <strong id="total-count">0</strong></p>
-                <p>Itens com Baixa: <strong id="baixa-count">0</strong></p>
+                <p>Total na Lista: <strong id="total-count">0</strong></p>
+                <p>Itens Baixados: <strong id="baixa-count">0</strong></p>
             </div>
 
-            <h3>Exportar Dados</h3>
-            <p>Baixe o arquivo CSV atualizado para importar no seu sistema.</p>
-            <button class="btn-primary" onclick="downloadCSV()">Baixar CSV Atualizado</button>
-            
-            <h3>Configurações</h3>
-            <label>Carregar CSV Base (Opcional)</label>
+            <h3>Exportar Dados (Backup)</h3>
+            <p style="font-size: 14px; color: #666;">Baixe o CSV com todos os itens (baixas e inclusões) para reimportar futuramente.</p>
+            <button class="btn-primary" onclick="downloadCSV()">Baixar CSV Completo</button>
+
+            <h3>Carregar Lista Base (CSV)</h3>
+            <p style="font-size: 14px; color: #666;">Selecione a planilha CSV com as colunas: Tombamento, Denominacao, Marca.</p>
             <input type="file" id="csv-file-input" accept=".csv" onchange="handleFileUpload(event)">
             
-            <br><br>
-            <button class="btn-danger" onclick="resetData()">Limpar Dados Locais (Resetar)</button>
+            <br>
+            <button class="btn-danger" onclick="resetData()">Limpar Tudo (Resetar)</button>
         </div>
-
     </div>
 
     <!-- Navegação Inferior -->
     <div class="bottom-nav">
-        <button class="nav-btn active" onclick="showScreen('scanner', this)">
-            <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 4h-4v2h6v-6h-2v4z"/></svg>
-            Scanner
-        </button>
-        <button class="nav-btn" onclick="showScreen('manual', this)">
+        <button class="nav-btn active" onclick="showScreen('search', this)">
             <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-            Buscar/Novo
+            Buscar
+        </button>
+        <button class="nav-btn" onclick="showScreen('register', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Cadastrar
         </button>
         <button class="nav-btn" onclick="showScreen('data', this)">
             <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
@@ -217,43 +199,26 @@
     <div id="toast">Mensagem</div>
 
     <script>
-        // --- DADOS INICIAIS (Baseado no CSV fornecido) ---
-        // Como o CSV é muito grande e tem formatos complexos, incluí uma amostra representativa aqui.
-        // O sistema tentará carregar o CSV completo via upload se o usuário desejar.
-        const initialData = [
-            { tombamento: "10174943", denominacao: "MICROCOMPUTADOR ITAUTEC", marca: "ITAUTEC", status: "PENDENTE" },
-            { tombamento: "10155072", denominacao: "COMPUTADOR DELL (MOUSE+TECLADO+MONITOR DELL)", marca: "DELL", status: "PENDENTE" },
-            { tombamento: "50012682", denominacao: "COMPUTADOR E MONITOR HP", marca: "SEM MARCA", status: "PENDENTE" },
-            { tombamento: "10170117", denominacao: "IMPRESSORA A LASER MONOCROMÁTICA LEXMARK T654DN", marca: "HP", status: "PENDENTE" },
-            { tombamento: "10109051", denominacao: "MONITOR DELL 21.5 P2217H", marca: "DELL", status: "PENDENTE" },
-            { tombamento: "10124988", denominacao: "NOBREAK 1200 VA / 600W", marca: "SEM MARCA", status: "PENDENTE" },
-            { tombamento: "10108601", denominacao: "ESTABILIZADOR DE 1000VA", marca: "SEM MARCA", status: "PENDENTE" },
-            { tombamento: "10170040", denominacao: "AR CONDICIONADO SPLIT INVERTER", marca: "ELGIN", status: "PENDENTE" },
-            { tombamento: "10150971", denominacao: "APARELHO TELEFÔNICO IP GRANDSTREAM DP715", marca: "GRANDSTREAM", status: "PENDENTE" },
-            { tombamento: "10147805", denominacao: "TABLET MULTILASER M10", marca: "MULTILASER", status: "PENDENTE" }
-        ];
-
+        // --- ESTADO GLOBAL ---
         let inventory = [];
-        let html5QrcodeScanner = null;
 
         // --- INICIALIZAÇÃO ---
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
-            updateStats();
         });
 
         function loadData() {
-            const stored = localStorage.getItem('inventory_data');
+            const stored = localStorage.getItem('inventory_data_ifs');
             if (stored) {
                 inventory = JSON.parse(stored);
             } else {
-                inventory = [...initialData];
-                saveData();
+                inventory = []; // Começa vazio, o usuário deve carregar o CSV
             }
+            updateStats();
         }
 
         function saveData() {
-            localStorage.setItem('inventory_data', JSON.stringify(inventory));
+            localStorage.setItem('inventory_data_ifs', JSON.stringify(inventory));
             updateStats();
         }
 
@@ -264,32 +229,12 @@
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-
-            if (screenId === 'scanner') {
-                // Não inicia automaticamente para economizar bateria, mas limpa resultados anteriores
-                document.getElementById('scan-result').innerHTML = '';
-            } else {
-                stopScanner();
-            }
         }
 
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            if (tab === 'manual') {
-                document.getElementById('tab-manual').style.display = 'block';
-                document.getElementById('tab-novo').style.display = 'none';
-            } else {
-                document.getElementById('tab-manual').style.display = 'none';
-                document.getElementById('tab-novo').style.display = 'block';
-            }
-        }
-
-        // --- LÓGICA DE BUSCA E BAIXA ---
+        // --- LÓGICA DE BUSCA ---
         function searchEquipment() {
             const term = document.getElementById('search-input').value.toUpperCase();
-            const resultDiv = document.getElementById('manual-result');
+            const resultDiv = document.getElementById('search-result');
             
             if (term.length < 2) {
                 resultDiv.innerHTML = '';
@@ -297,7 +242,7 @@
             }
 
             const results = inventory.filter(item => 
-                item.tombamento.includes(term) || 
+                item.tombamento.toUpperCase().includes(term) || 
                 item.denominacao.toUpperCase().includes(term) ||
                 item.marca.toUpperCase().includes(term)
             );
@@ -309,15 +254,15 @@
             container.innerHTML = '';
             if (results.length === 0) {
                 container.innerHTML = `
-                    <div class="card" style="border-left-color: var(--danger);">
+                    <div class="card" style="border-left-color: var(--ifs-red);">
                         <h3>Não encontrado</h3>
                         <p>Deseja cadastrar este item?</p>
-                        <button class="btn-success" onclick="switchTab('novo')">Cadastrar Novo</button>
+                        <button class="btn-primary" onclick="showScreen('register', document.querySelectorAll('.nav-btn')[1])">Ir para Cadastro</button>
                     </div>`;
                 return;
             }
 
-            results.slice(0, 5).forEach(item => {
+            results.slice(0, 10).forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
@@ -329,7 +274,7 @@
                     </div>
                     ${item.status !== 'BAIXADO' ? 
                         `<button class="btn-primary" style="margin-top:10px" onclick="giveBaixa('${item.tombamento}')">Dar Baixa</button>` : 
-                        `<p style="color:var(--success); font-size:12px; margin-top:5px;">Item já baixado</p>`
+                        `<p style="color:#555; font-size:12px; margin-top:5px;">Item já baixado</p>`
                     }
                 `;
                 container.appendChild(card);
@@ -343,14 +288,12 @@
                     inventory[index].status = 'BAIXADO';
                     saveData();
                     showToast('Baixa realizada com sucesso!');
-                    
-                    // Atualiza a tela atual
-                    if(document.getElementById('search-input').value) searchEquipment();
-                    document.getElementById('scan-result').innerHTML = ''; // Limpa scanner
+                    searchEquipment(); // Atualiza a busca
                 }
             }
         }
 
+        // --- LÓGICA DE CADASTRO ---
         function registerNewEquipment() {
             const tomb = document.getElementById('new-tombamento').value.trim();
             const desc = document.getElementById('new-descricao').value.trim();
@@ -374,89 +317,12 @@
             });
 
             saveData();
-            showToast('Equipamento cadastrado!');
+            showToast('Equipamento cadastrado com sucesso!');
+            
+            // Limpa os campos
             document.getElementById('new-tombamento').value = '';
             document.getElementById('new-descricao').value = '';
             document.getElementById('new-marca').value = '';
-            switchTab('manual'); // Volta para busca
-        }
-
-        // --- SCANNER ---
-        function startScanner() {
-            if (html5QrcodeScanner) return;
-
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                config,
-                (decodedText) => {
-                    // Sucesso na leitura
-                    stopScanner();
-                    handleScanResult(decodedText);
-                },
-                (errorMessage) => {
-                    // Ignorar erros de leitura contínua
-                }
-            ).catch(err => {
-                showToast('Erro ao acessar câmera: ' + err);
-            });
-        }
-
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    html5QrcodeScanner.clear();
-                    html5QrcodeScanner = null;
-                }).catch(err => console.log("Erro ao parar scanner", err));
-            }
-        }
-
-        function handleScanResult(text) {
-            // O QR Code pode conter o número ou uma URL. Vamos tentar extrair o número.
-            // Se o texto for apenas o número, usamos ele.
-            // Se for uma URL, tentamos pegar a última parte.
-            let tombamento = text.trim();
-            
-            // Lógica simples: se tiver barras, pega a última parte
-            if (tombamento.includes('/')) {
-                const parts = tombamento.split('/');
-                tombamento = parts[parts.length - 1];
-            }
-
-            const resultDiv = document.getElementById('scan-result');
-            const item = inventory.find(i => i.tombamento === tombamento);
-
-            if (item) {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>${item.denominacao}</h3>
-                    <p><strong>Tombamento:</strong> ${item.tombamento}</p>
-                    <p><strong>Status:</strong> ${item.status}</p>
-                    <button class="btn-success" onclick="giveBaixa('${item.tombamento}')">Confirmar Baixa</button>
-                `;
-                resultDiv.innerHTML = '';
-                resultDiv.appendChild(card);
-                showToast('Equipamento Encontrado!');
-            } else {
-                resultDiv.innerHTML = `
-                    <div class="card" style="border-left-color: var(--danger);">
-                        <h3>Não Encontrado</h3>
-                        <p>Código lido: <strong>${tombamento}</strong></p>
-                        <p>Este item não está na lista.</p>
-                        <button class="btn-primary" onclick="prefillNew('${tombamento}')">Cadastrar Este Código</button>
-                    </div>
-                `;
-                showToast('Equipamento não encontrado na base.');
-            }
-        }
-
-        function prefillNew(code) {
-            showScreen('manual', document.querySelectorAll('.nav-btn')[1]);
-            switchTab('novo');
-            document.getElementById('new-tombamento').value = code;
         }
 
         // --- UTILITÁRIOS ---
@@ -473,24 +339,7 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        function downloadCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Tombamento,Denominacao,Marca,Status\n";
-
-            inventory.forEach(row => {
-                const line = `"${row.tombamento}","${row.denominacao}","${row.marca}","${row.status}"`;
-                csvContent += line + "\n";
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "inventario_atualizado.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
+        // --- IMPORTAÇÃO E EXPORTAÇÃO CSV ---
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -504,88 +353,140 @@
         }
 
         function parseCSV(text) {
-            // Parser simples de CSV para o formato específico
-            const lines = text.split('\n');
-            const newInventory = [];
+            // Parser robusto para lidar com aspas e vírgulas
+            const lines = [];
+            let currentLine = [];
+            let currentField = '';
+            let inQuotes = false;
             
-            // Pula o cabeçalho
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-
-                // Tenta separar por vírgula, mas lida com aspas simples
-                // Como o CSV é complexo, vamos assumir o padrão: Item,Tombamento,Denominacao,Marca...
-                // Nota: Este parser é básico e pode falhar se houver muitas vírgulas dentro das aspas.
-                // Para produção, uma lib como PapaParse seria ideal, mas para manter "self-contained" usamos isso.
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i+1];
                 
-                const parts = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                
-                if (parts && parts.length >= 3) {
-                    // Limpeza básica
-                    const tombamento = parts[1] ? parts[1].replace(/"/g, '').trim() : '';
-                    const denominacao = parts[2] ? parts[2].replace(/"/g, '').trim() : '';
-                    const marca = parts[3] ? parts[3].replace(/"/g, '').trim() : '';
-                    
-                    if (tombamento) {
-                        newInventory.push({
-                            tombamento: tombamento,
-                            denominacao: denominacao,
-                            marca: marca,
-                            status: "PENDENTE"
-                        });
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (nextChar === '"') {
+                            currentField += '"';
+                            i++; // Pula a próxima aspa
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        currentField += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === ',') {
+                        currentLine.push(currentField);
+                        currentField = '';
+                    } else if (char === '\n' || char === '\r') {
+                        if (char === '\r' && nextChar === '\n') i++;
+                        currentLine.push(currentField);
+                        if (currentLine.some(f => f.trim() !== '')) {
+                            lines.push(currentLine);
+                        }
+                        currentLine = [];
+                        currentField = '';
+                    } else {
+                        currentField += char;
                     }
                 }
+            }
+            // Última linha
+            if (currentField || currentLine.length > 0) {
+                currentLine.push(currentField);
+                if (currentLine.some(f => f.trim() !== '')) {
+                    lines.push(currentLine);
+                }
+            }
+
+            if (lines.length === 0) {
+                showToast('Arquivo CSV vazio ou inválido.');
+                return;
+            }
+
+            // Detecta cabeçalho
+            const header = lines[0].map(h => h.trim().toUpperCase());
+            let idxTombamento = header.indexOf('TOMBAMENTO');
+            let idxDenominacao = header.indexOf('DENOMINACAO');
+            let idxMarca = header.indexOf('MARCA');
+            let idxStatus = header.indexOf('STATUS');
+
+            // Se não encontrar cabeçalho, assume ordem padrão
+            if (idxTombamento === -1) {
+                idxTombamento = 0;
+                idxDenominacao = 1;
+                idxMarca = 2;
+                idxStatus = -1; // Sem status pré-definido
+            }
+
+            const newInventory = [];
+            for (let i = 1; i < lines.length; i++) {
+                const row = lines[i];
+                const tombamento = row[idxTombamento] ? row[idxTombamento].trim() : '';
+                if (!tombamento) continue;
+
+                const denominacao = row[idxDenominacao] ? row[idxDenominacao].trim() : 'SEM DESCRIÇÃO';
+                const marca = row[idxMarca] ? row[idxMarca].trim() : 'SEM MARCA';
+                const status = (idxStatus !== -1 && row[idxStatus]) ? row[idxStatus].trim().toUpperCase() : 'PENDENTE';
+
+                newInventory.push({
+                    tombamento,
+                    denominacao,
+                    marca,
+                    status: status === 'BAIXADO' ? 'BAIXADO' : 'PENDENTE'
+                });
             }
 
             if (newInventory.length > 0) {
                 if(confirm(`Carregados ${newInventory.length} itens. Isso substituirá a lista atual. Continuar?`)) {
                     inventory = newInventory;
                     saveData();
-                    showToast('Lista atualizada com sucesso!');
-                    updateStats();
+                    showToast('Lista carregada com sucesso!');
                 }
             } else {
-                showToast('Não foi possível ler o CSV. Verifique o formato.');
+                showToast('Nenhum item válido encontrado no CSV.');
             }
+        }
+
+        function downloadCSV() {
+            if (inventory.length === 0) {
+                showToast('Não há dados para exportar.');
+                return;
+            }
+
+            let csvContent = "Tombamento,Denominacao,Marca,Status\n";
+            inventory.forEach(row => {
+                // Escapa aspas duplas duplicando-as
+                const t = row.tombamento.replace(/"/g, '""');
+                const d = row.denominacao.replace(/"/g, '""');
+                const m = row.marca.replace(/"/g, '""');
+                const s = row.status;
+                csvContent += `"${t}","${d}","${m}","${s}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "inventario_ifs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function resetData() {
-            if(confirm('Isso apagará todas as alterações e voltará para a lista inicial. Tem certeza?')) {
-                localStorage.removeItem('inventory_data');
-                location.reload();
+            if(confirm('Isso apagará todos os dados salvos. Tem certeza?')) {
+                localStorage.removeItem('inventory_data_ifs');
+                inventory = [];
+                saveData();
+                showToast('Dados resetados.');
+                // Limpa a tela de busca
+                document.getElementById('search-input').value = '';
+                document.getElementById('search-result').innerHTML = '';
             }
         }
     </script>
-    <!-- BOTÃO TEMPORÁRIO DE RESGATE -->
-<div style="padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin: 20px;">
-    <h3 style="color: #856404; margin-top: 0;">⚠️ RECUPERAÇÃO DE DADOS</h3>
-    <p style="font-size: 14px;">Clique no botão abaixo para baixar o backup dos seus dados salvos no celular.</p>
-    <button onclick="resgatarDados()" style="background: #dc3545; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
-        BAIXAR BACKUP JSON
-    </button>
-</div>
-
-<script>
-function resgatarDados() {
-    // Pega os dados salvos no celular (tanto da versão antiga quanto da nova)
-    let dados = localStorage.getItem('inventory_data_v2') || localStorage.getItem('inventory_data');
-    
-    if (!dados) {
-        alert("Nenhum dado encontrado na memória do navegador.");
-        return;
-    }
-    
-    // Cria o arquivo para download
-    const blob = new Blob([dados], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'backup_inventario.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    alert("Backup baixado! Envie este arquivo para o suporte (ou cole o conteúdo aqui).");
-}
-</script>
 </body>
 </html>
